@@ -10,7 +10,7 @@ import android.system.Os;
 import android.util.Pair;
 import android.view.WindowManager;
 
-import com.termux.R;
+import com.codemux.R;
 import com.termux.shared.file.FileUtils;
 import com.termux.shared.termux.crash.TermuxCrashUtils;
 import com.termux.shared.termux.file.TermuxFileUtils;

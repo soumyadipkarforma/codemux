@@ -9,7 +9,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 
-import com.termux.R;
+import com.codemux.R;
 import com.termux.shared.data.DataUtils;
 import com.termux.shared.data.IntentUtils;
 import com.termux.shared.termux.plugins.TermuxPluginUtils;

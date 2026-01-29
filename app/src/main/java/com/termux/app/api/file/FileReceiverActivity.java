@@ -10,7 +10,7 @@ import android.util.Patterns;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.termux.R;
+import com.codemux.R;
 import com.termux.shared.android.PackageUtils;
 import com.termux.shared.data.DataUtils;
 import com.termux.shared.data.IntentUtils;
