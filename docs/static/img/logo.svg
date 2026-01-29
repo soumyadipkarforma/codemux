@@ -1,0 +1,13 @@
+<svg width="240" height="240" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- Dark Navy Blue Background -->
+    <rect width="100" height="100" fill="#001f3f" rx="20" />
+    
+    <!-- Arrows resembling an 'S' -->
+    <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Top Left Arrow (<) -->
+        <path d="M 70 25 L 40 40 L 70 55" />
+        
+        <!-- Bottom Right Arrow (>) -->
+        <path d="M 30 55 L 60 70 L 30 85" />
+    </g>
+</svg>
