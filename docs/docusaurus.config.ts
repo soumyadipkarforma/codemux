@@ -59,9 +59,10 @@ const config: Config = {
     },
     navbar: {
       title: 'Codemux',
+      style: 'dark',
       logo: {
         alt: 'Codemux Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo-white.svg',
       },
       items: [
         {

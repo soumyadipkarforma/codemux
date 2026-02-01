@@ -2,7 +2,7 @@
     <!-- No background -->
 
     <!-- Terminal-style arrow similar to app logo -->
-    <g fill="#000000">
+    <g fill="#FFFFFF">
         <!-- Right-pointing arrow (>) -->
         <path d="M40,30
                  L60,45

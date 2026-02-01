@@ -3,36 +3,44 @@
  */
 
 :root {
-  /* Codemux Navy Theme */
-  --ifm-color-primary: #4da6ff; /* Bright Blue for contrast against Navy */
-  --ifm-color-primary-dark: #218aff;
-  --ifm-color-primary-darker: #007bff;
-  --ifm-color-primary-darkest: #0066d6;
-  --ifm-color-primary-light: #79c2ff;
-  --ifm-color-primary-lighter: #a3d9ff;
-  --ifm-color-primary-lightest: #cfedff;
+  /* Codemux Theme Colors */
+  --codemux-deep-sea-green: #004D40;
+  --codemux-deep-navy-blue: #000033;
+
+  --ifm-color-primary: #00897b;
+  --ifm-color-primary-dark: #00796b;
+  --ifm-color-primary-darker: #00695c;
+  --ifm-color-primary-darkest: #004d40;
+  --ifm-color-primary-light: #26a69a;
+  --ifm-color-primary-lighter: #4db6ac;
+  --ifm-color-primary-lightest: #80cbc4;
+  
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
+/* For dark mode background */
 [data-theme='dark'] {
-  --ifm-color-primary: #4da6ff;
-  --ifm-color-primary-dark: #218aff;
-  --ifm-color-primary-darker: #007bff;
-  --ifm-color-primary-darkest: #0066d6;
-  --ifm-color-primary-light: #79c2ff;
-  --ifm-color-primary-lighter: #a3d9ff;
-  --ifm-color-primary-lightest: #cfedff;
-  
-  /* Codemux Dark Theme Backgrounds (Dark Navy Blue) */
-  --ifm-background-color: #001f3f;
-  --ifm-background-surface-color: #002b55;
-  
+  --ifm-background-color: var(--codemux-deep-navy-blue);
+  --ifm-background-surface-color: #001a4d;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
 .hero--primary {
-  --ifm-hero-background-color: #001f3f;
-  background: linear-gradient(180deg, #001f3f 0%, #003366 100%);
-  color: #ffffff; /* Ensure hero text contrast */
+  --ifm-hero-background-color: var(--codemux-deep-sea-green);
+  background: linear-gradient(45deg, var(--codemux-deep-sea-green) 0%, var(--codemux-deep-navy-blue) 100%);
+  color: #ffffff;
+}
+
+/* Ensure navbar also uses the theme gradient if desired */
+.navbar {
+  background: linear-gradient(45deg, var(--codemux-deep-sea-green) 0%, var(--codemux-deep-navy-blue) 100%);
+}
+
+.navbar__title, .navbar__item {
+  color: #ffffff;
+}
+
+.navbar__link:hover {
+  color: var(--ifm-color-primary-light);
 }
