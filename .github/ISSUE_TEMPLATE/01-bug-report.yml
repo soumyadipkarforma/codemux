@@ -6,8 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        **THIS IS A BUG TRACKER OF THE TERMUX APP. IF YOU HAVE ISSUES WITH A PACKAGE INSIDE THE APP, THEN PLEASE OPEN AN ISSUE AT [TERMUX/TERMUX-PACKAGES](https://github.com/termux/termux-packages) INSTEAD.**
-        If you are unsure if this is a bug with the Termux app itself or any of the packages, kindly open up the bug at [termux/termux-packages](https://github.com/termux/termux-packages) as it's very likely that it belongs there.
+        **THIS IS A BUG TRACKER OF THE CODEMUX APP. IF YOU HAVE ISSUES WITH A PACKAGE INSIDE THE APP, THEN PLEASE OPEN AN ISSUE AT [TERMUX/TERMUX-PACKAGES](https://github.com/termux/termux-packages) INSTEAD.**
+        If you are unsure if this is a bug with the Codemux app itself or any of the packages, kindly open up the bug at [termux/termux-packages](https://github.com/termux/termux-packages) as it's very likely that it belongs there.
 
         Use search before you open an issue to check whether your issue has been already reported and perhaps solved.
 
@@ -38,7 +38,7 @@ body:
       label: System information
       description: Please provide info about your device
       value: |
-        * Termux application version:
+        * Codemux application version:
         * Android OS version:
         * Device model:
     validations:
