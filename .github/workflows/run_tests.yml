@@ -3,12 +3,16 @@ name: Unit tests
 on:
   push:
     branches:
-      - master
+      - main
       - android-10
+    paths-ignore:
+      - 'docs/**'
   pull_request:
     branches:
-      - master
+      - main
       - android-10
+    paths-ignore:
+      - 'docs/**'
 
 jobs:
   testing:
