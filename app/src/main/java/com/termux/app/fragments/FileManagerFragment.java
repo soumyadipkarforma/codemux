@@ -137,51 +137,6 @@ public class FileManagerFragment extends Fragment {
         builder.show();
     }
 
-    private class FileAdapter extends RecyclerView.Adapter<FileViewHolder> {
-        private List<File> mFiles;
-
-        public FileAdapter(List<File> files) {
-            mFiles = files;
-        }
-
-        public void setFiles(List<File> files) {
-            mFiles = files;
-            notifyDataSetChanged();
-        }
-
-        @NonNull
-        @Override
-        public FileViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_1, parent, false);
-            return new FileViewHolder(view);
-        }
-
-import android.widget.PopupMenu;
-import android.app.AlertDialog;
-import android.widget.EditText;
-
-...
-
-        @Override
-        public void onBindViewHolder(@NonNull FileViewHolder holder, int position) {
-            File file = mFiles.get(position);
-            holder.mTextView.setText(file.isDirectory() ? "[DIR] " + file.getName() : file.getName());
-            holder.itemView.setOnClickListener(v -> {
-                if (file.isDirectory()) {
-                    mCurrentDir = file;
-                    loadFiles();
-                } else {
-                    if (getActivity() instanceof com.termux.app.TermuxActivity) {
-                        ((com.termux.app.TermuxActivity) getActivity()).openFileInEditor(file);
-                    }
-                }
-            });
-            holder.itemView.setOnLongClickListener(v -> {
-                showContextMenu(v, file);
-                return true;
-            });
-        }
-
     private void showContextMenu(View v, File file) {
         PopupMenu popup = new PopupMenu(getContext(), v);
         popup.getMenu().add("Rename");
@@ -235,8 +190,11 @@ import android.widget.EditText;
 
     private boolean deleteRecursive(File file) {
         if (file.isDirectory()) {
-            for (File child : file.listFiles()) {
-                deleteRecursive(child);
+            File[] children = file.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    deleteRecursive(child);
+                }
             }
         }
         return file.delete();
@@ -255,8 +213,11 @@ import android.widget.EditText;
 
     private void zipRecursive(File file, String path, java.util.zip.ZipOutputStream zos) throws java.io.IOException {
         if (file.isDirectory()) {
-            for (File child : file.listFiles()) {
-                zipRecursive(child, path + "/" + child.getName(), zos);
+            File[] children = file.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    zipRecursive(child, path + "/" + child.getName(), zos);
+                }
             }
         } else {
             zos.putNextEntry(new java.util.zip.ZipEntry(path));
@@ -290,6 +251,45 @@ import android.widget.EditText;
             Toast.makeText(getContext(), "Compression failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
+
+    private class FileAdapter extends RecyclerView.Adapter<FileViewHolder> {
+        private List<File> mFiles;
+
+        public FileAdapter(List<File> files) {
+            mFiles = files;
+        }
+
+        public void setFiles(List<File> files) {
+            mFiles = files;
+            notifyDataSetChanged();
+        }
+
+        @NonNull
+        @Override
+        public FileViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_1, parent, false);
+            return new FileViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull FileViewHolder holder, int position) {
+            File file = mFiles.get(position);
+            holder.mTextView.setText(file.isDirectory() ? "[DIR] " + file.getName() : file.getName());
+            holder.itemView.setOnClickListener(v -> {
+                if (file.isDirectory()) {
+                    mCurrentDir = file;
+                    loadFiles();
+                } else {
+                    if (getActivity() instanceof com.termux.app.TermuxActivity) {
+                        ((com.termux.app.TermuxActivity) getActivity()).openFileInEditor(file);
+                    }
+                }
+            });
+            holder.itemView.setOnLongClickListener(v -> {
+                showContextMenu(v, file);
+                return true;
+            });
+        }
 
         @Override
         public int getItemCount() {

@@ -4,20 +4,19 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.termux.R;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
-
-import android.widget.Button;
-import android.widget.Toast;
-import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 
 public class FileEditorFragment extends Fragment {
     private EditText mEditor;
