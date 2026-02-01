@@ -20,6 +20,11 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ env.GITHUB_REF }}
+            # 👇 NEW FIX — install hub so the workflow stops failing
+      - name: Install hub
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y hub
 
       - name: Build and attach APKs to release
         shell: bash {0}
