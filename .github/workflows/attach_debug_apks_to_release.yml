@@ -12,21 +12,23 @@ jobs:
       fail-fast: false
       matrix:
         package_variant: [ apt-android-7, apt-android-5 ]
+
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - name: Clone repository
+      - name: Checkout repository
         uses: actions/checkout@v6
         with:
           ref: ${{ env.GITHUB_REF }}
-            # 👇 NEW FIX — install hub so the workflow stops failing
-      - name: Install hub
+
+      # Install GitHub CLI
+      - name: Install gh CLI
         run: |
           sudo apt-get update
-          sudo apt-get install -y hub
+          sudo apt-get install -y gh
 
-      - name: Build and attach APKs to release
+      - name: Build and attach APKs using gh
         shell: bash {0}
         env:
           PACKAGE_VARIANT: ${{ matrix.package_variant }}
@@ -34,56 +36,54 @@ jobs:
           exit_on_error() {
               echo "$1"
               echo "Deleting '$RELEASE_VERSION_NAME' release and '$GITHUB_REF' tag"
-              hub release delete "$RELEASE_VERSION_NAME"
+              gh release delete "$RELEASE_VERSION_NAME" --yes
               git push --delete origin "$GITHUB_REF"
               exit 1
           }
 
           echo "Setting vars"
           RELEASE_VERSION_NAME="${GITHUB_REF/refs\/tags\//}"
+
+          # Validate semantic version
           if ! printf "%s" "${RELEASE_VERSION_NAME/v/}" | grep -qP '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'; then
-           exit_on_error "The versionName '${RELEASE_VERSION_NAME/v/}' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html."
+            exit_on_error "The versionName '${RELEASE_VERSION_NAME/v/}' is not valid semver."
           fi
 
           APK_DIR_PATH="./app/build/outputs/apk/debug"
           APK_VERSION_TAG="$RELEASE_VERSION_NAME+${{ env.PACKAGE_VARIANT }}-github-debug"
-          APK_BASENAME_PREFIX="Codemux-app_$APK_VERSION_TAG"
+          SAFE_TAG="${APK_VERSION_TAG//+/_}"
+          APK_BASENAME_PREFIX="Codemux-app_$SAFE_TAG"
 
-          echo "Building APKs for 'APK_VERSION_TAG' release"
-          export TERMUX_APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
-          export TERMUX_PACKAGE_VARIANT="${{ env.PACKAGE_VARIANT }}" # Used by app/build.gradle
+          echo "Building APKs for '$APK_VERSION_TAG'"
+          export TERMUX_APK_VERSION_TAG="$APK_VERSION_TAG"
+          export TERMUX_PACKAGE_VARIANT="${{ env.PACKAGE_VARIANT }}"
+
           if ! ./gradlew assembleDebug; then
-            exit_on_error "Build failed for '$APK_VERSION_TAG' release."
+            exit_on_error "Build failed for '$APK_VERSION_TAG'"
           fi
 
           echo "Validating APKs"
           for abi in universal arm64-v8a armeabi-v7a x86_64 x86; do
-            if ! test -f "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_$abi.apk"; then
+            FILE="$APK_DIR_PATH/${APK_BASENAME_PREFIX}_$abi.apk"
+            if ! test -f "$FILE"; then
               files_found="$(ls "$APK_DIR_PATH")"
-              exit_on_error "Failed to find built APK at '$APK_DIR_PATH/${APK_BASENAME_PREFIX}_$abi.apk'. Files found: "$'\n'"$files_found"
+              exit_on_error "Missing APK: $FILE — Found files: $files_found"
             fi
           done
 
-          echo "Generating sha25sums file"
-          if ! (cd "$APK_DIR_PATH"; sha256sum \
-            "${APK_BASENAME_PREFIX}_universal.apk" \
-            "${APK_BASENAME_PREFIX}_arm64-v8a.apk" \
-            "${APK_BASENAME_PREFIX}_armeabi-v7a.apk" \
-            "${APK_BASENAME_PREFIX}_x86_64.apk" \
-            "${APK_BASENAME_PREFIX}_x86.apk" \
-            > "${APK_BASENAME_PREFIX}_sha256sums"); then
-            exit_on_error "Generate sha25sums failed for '$APK_VERSION_TAG' release."
-          fi
+          echo "Generating sha256sums file"
+          (
+            cd "$APK_DIR_PATH"
+            sha256sum \
+              "${APK_BASENAME_PREFIX}_universal.apk" \
+              "${APK_BASENAME_PREFIX}_arm64-v8a.apk" \
+              "${APK_BASENAME_PREFIX}_armeabi-v7a.apk" \
+              "${APK_BASENAME_PREFIX}_x86_64.apk" \
+              "${APK_BASENAME_PREFIX}_x86.apk" \
+              > "${APK_BASENAME_PREFIX}_sha256sums"
+          ) || exit_on_error "sha256sum generation failed."
 
-          echo "Attaching APKs to github release"
-          if ! hub release edit \
-          -m "" \
-          -a "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_universal.apk" \
-          -a "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_arm64-v8a.apk" \
-          -a "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_armeabi-v7a.apk" \
-          -a "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_x86_64.apk" \
-          -a "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_x86.apk" \
-          -a "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_sha256sums" \
-          "$RELEASE_VERSION_NAME"; then
-            exit_on_error "Attach APKs to release failed for '$APK_VERSION_TAG' release."
-          fi
+          echo "Attaching APKs and SHA256 sums to release"
+          for file in "$APK_DIR_PATH/${APK_BASENAME_PREFIX}"*.apk "$APK_DIR_PATH/${APK_BASENAME_PREFIX}_sha256sums"; do
+            gh release upload "$RELEASE_VERSION_NAME" "$file" --clobber || exit_on_error "Failed to upload $file"
+          done
