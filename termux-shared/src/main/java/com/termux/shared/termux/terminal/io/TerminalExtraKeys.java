@@ -18,9 +18,16 @@ import static com.termux.shared.termux.extrakeys.ExtraKeysConstants.PRIMARY_KEY_
 
 public class TerminalExtraKeys implements ExtraKeysView.IExtraKeysView {
 
-    private final TerminalView mTerminalView;
+    private TerminalView mTerminalView;
 
     public TerminalExtraKeys(@NonNull TerminalView terminalView) {
+        mTerminalView = terminalView;
+    }
+
+    public TerminalExtraKeys() {
+    }
+
+    public void setTerminalView(@NonNull TerminalView terminalView) {
         mTerminalView = terminalView;
     }
 

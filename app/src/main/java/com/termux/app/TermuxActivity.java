@@ -64,6 +64,12 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.widget.ViewPager2;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+import com.termux.app.fragments.IDEPagerAdapter;
+import androidx.appcompat.widget.Toolbar;
 
 import java.util.Arrays;
 
@@ -175,6 +181,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     private float mTerminalToolbarDefaultHeight;
 
+    private ViewPager2 mViewPager;
+    private IDEPagerAdapter mPagerAdapter;
+    private TabLayout mTabLayout;
+
 
     private static final int CONTEXT_MENU_SELECT_URL_ID = 0;
     private static final int CONTEXT_MENU_SHARE_TRANSCRIPT_ID = 1;
@@ -214,6 +224,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_termux);
+
+        setupIDE();
+
+        requestStoragePermission(false);
 
         // Load termux shared preferences
         // This will also fail if TermuxConstants.TERMUX_PACKAGE_NAME does not equal applicationId
@@ -481,14 +495,58 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
 
+    private void setupIDE() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.setNavigationOnClickListener(v -> getDrawer().openDrawer(Gravity.LEFT));
+
+        mViewPager = findViewById(R.id.view_pager);
+        mPagerAdapter = new IDEPagerAdapter(this);
+        mViewPager.setAdapter(mPagerAdapter);
+        mViewPager.setOffscreenPageLimit(2);
+
+        mTabLayout = findViewById(R.id.tab_layout);
+        new TabLayoutMediator(mTabLayout, mViewPager, (tab, position) -> {
+            switch (position) {
+                case 0: tab.setText("File Manager"); break;
+                case 1: tab.setText("File Editor"); break;
+                case 2: tab.setText("Shell"); break;
+            }
+        }).attach();
+    }
+
+    public void openFileInEditor(java.io.File file) {
+        mViewPager.setCurrentItem(1);
+        mPagerAdapter.fileEditorFragment.openFile(file);
+    }
+
+    private java.io.File mCurrentWorkingDirectory;
+
+    public void onDirectoryChanged(java.io.File newDir) {
+        mCurrentWorkingDirectory = newDir;
+        TerminalSession session = getCurrentSession();
+        if (session != null) {
+            session.write("cd \"" + newDir.getAbsolutePath() + "\"\n");
+        }
+    }
+
+    public void onTerminalViewCreated(TerminalView terminalView) {
+        mTerminalView = terminalView;
+        if (mTermuxTerminalViewClient != null) {
+            mTerminalView.setTerminalViewClient(mTermuxTerminalViewClient);
+        }
+        registerForContextMenu(mTerminalView);
+        if (mTermuxTerminalExtraKeys != null) {
+            mTermuxTerminalExtraKeys.setTerminalView(mTerminalView);
+        }
+    }
+
     private void setTermuxTerminalViewAndClients() {
         // Set termux terminal view and session clients
         mTermuxTerminalSessionActivityClient = new TermuxTerminalSessionActivityClient(this);
         mTermuxTerminalViewClient = new TermuxTerminalViewClient(this, mTermuxTerminalSessionActivityClient);
 
-        // Set termux terminal view
-        mTerminalView = findViewById(R.id.terminal_view);
-        mTerminalView.setTerminalViewClient(mTermuxTerminalViewClient);
+        // mTerminalView will be set in onTerminalViewCreated
 
         if (mTermuxTerminalViewClient != null)
             mTermuxTerminalViewClient.onCreate();
@@ -568,15 +626,18 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         settingsButton.setOnClickListener(v -> {
             ActivityUtils.startActivity(this, new Intent(this, SettingsActivity.class));
         });
+
+        findViewById(R.id.theme_button).setOnClickListener(v -> showStylingDialog());
+        findViewById(R.id.shortcuts_button).setOnClickListener(v -> ActivityUtils.startActivity(this, new Intent(this, HelpActivity.class)));
     }
 
     private void setNewSessionButtonView() {
         View newSessionButton = findViewById(R.id.new_session_button);
-        newSessionButton.setOnClickListener(v -> mTermuxTerminalSessionActivityClient.addNewSession(false, null));
+        newSessionButton.setOnClickListener(v -> mTermuxTerminalSessionActivityClient.addNewSession(false, null, mCurrentWorkingDirectory != null ? mCurrentWorkingDirectory.getAbsolutePath() : null));
         newSessionButton.setOnLongClickListener(v -> {
             TextInputDialogUtils.textInput(TermuxActivity.this, R.string.title_create_named_session, null,
-                R.string.action_create_named_session_confirm, text -> mTermuxTerminalSessionActivityClient.addNewSession(false, text),
-                R.string.action_new_session_failsafe, text -> mTermuxTerminalSessionActivityClient.addNewSession(true, text),
+                R.string.action_create_named_session_confirm, text -> mTermuxTerminalSessionActivityClient.addNewSession(false, text, mCurrentWorkingDirectory != null ? mCurrentWorkingDirectory.getAbsolutePath() : null),
+                R.string.action_new_session_failsafe, text -> mTermuxTerminalSessionActivityClient.addNewSession(true, text, mCurrentWorkingDirectory != null ? mCurrentWorkingDirectory.getAbsolutePath() : null),
                 -1, null, null);
             return true;
         });

@@ -30,10 +30,10 @@ public class TermuxTerminalExtraKeys extends TerminalExtraKeys {
 
     private static final String LOG_TAG = "TermuxTerminalExtraKeys";
 
-    public TermuxTerminalExtraKeys(TermuxActivity activity, @NonNull TerminalView terminalView,
+    public TermuxTerminalExtraKeys(TermuxActivity activity, @Nullable TerminalView terminalView,
                                    TermuxTerminalViewClient termuxTerminalViewClient,
                                    TermuxTerminalSessionActivityClient termuxTerminalSessionActivityClient) {
-        super(terminalView);
+        super(terminalView == null ? new TerminalView(activity, null) : terminalView);
 
         mActivity = activity;
         mTermuxTerminalViewClient = termuxTerminalViewClient;
