@@ -63,6 +63,14 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     }
 
     /**
+     * Should be called when mActivity.onTerminalViewCreated() is called
+     */
+    public void onTerminalViewCreated() {
+        // Set terminal fonts and colors
+        checkForFontAndColors();
+    }
+
+    /**
      * Should be called when mActivity.onStart() is called
      */
     public void onStart() {
@@ -76,7 +84,9 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
 
         // The current terminal session may have changed while being away, force
         // a refresh of the displayed terminal.
-        mActivity.getTerminalView().onScreenUpdated();
+        if (mActivity.getTerminalView() != null) {
+            mActivity.getTerminalView().onScreenUpdated();
+        }
     }
 
     /**
@@ -118,7 +128,11 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     public void onTextChanged(@NonNull TerminalSession changedSession) {
         if (!mActivity.isVisible()) return;
 
-        if (mActivity.getCurrentSession() == changedSession) mActivity.getTerminalView().onScreenUpdated();
+        if (mActivity.getCurrentSession() == changedSession) {
+            if (mActivity.getTerminalView() != null) {
+                mActivity.getTerminalView().onScreenUpdated();
+            }
+        }
     }
 
     @Override
@@ -192,8 +206,11 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
         if (!mActivity.isVisible()) return;
 
         String text = ShareUtils.getTextStringFromClipboardIfSet(mActivity, true);
-        if (text != null)
-            mActivity.getTerminalView().mEmulator.paste(text);
+        if (text != null) {
+            if (mActivity.getTerminalView() != null && mActivity.getTerminalView().mEmulator != null) {
+                mActivity.getTerminalView().mEmulator.paste(text);
+            }
+        }
     }
 
     @Override
@@ -231,7 +248,9 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
 
         // If cursor is to enabled now, then start cursor blinking if blinking is enabled
         // otherwise stop cursor blinking
-        mActivity.getTerminalView().setTerminalCursorBlinkerState(enabled, false);
+        if (mActivity.getTerminalView() != null) {
+            mActivity.getTerminalView().setTerminalCursorBlinkerState(enabled, false);
+        }
     }
 
     @Override
@@ -251,7 +270,9 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     public void onResetTerminalSession() {
         // Ensure blinker starts again after reset if cursor blinking was disabled before reset like
         // with "tput civis" which would have called onTerminalCursorStateChange()
-        mActivity.getTerminalView().setTerminalCursorBlinkerState(true, true);
+        if (mActivity.getTerminalView() != null) {
+            mActivity.getTerminalView().setTerminalCursorBlinkerState(true, true);
+        }
     }
 
 
@@ -293,9 +314,11 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     public void setCurrentSession(TerminalSession session) {
         if (session == null) return;
 
-        if (mActivity.getTerminalView().attachSession(session)) {
-            // notify about switched session if not already displaying the session
-            notifyOfSessionChange();
+        if (mActivity.getTerminalView() != null) {
+            if (mActivity.getTerminalView().attachSession(session)) {
+                // notify about switched session if not already displaying the session
+                notifyOfSessionChange();
+            }
         }
 
         // We call the following even when the session is already being displayed since config may
@@ -516,7 +539,9 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
             updateBackgroundColor();
 
             final Typeface newTypeface = (fontFile.exists() && fontFile.length() > 0) ? Typeface.createFromFile(fontFile) : Typeface.MONOSPACE;
-            mActivity.getTerminalView().setTypeface(newTypeface);
+            if (mActivity.getTerminalView() != null) {
+                mActivity.getTerminalView().setTypeface(newTypeface);
+            }
         } catch (Exception e) {
             Logger.logStackTraceWithMessage(LOG_TAG, "Error in checkForFontAndColors()", e);
         }

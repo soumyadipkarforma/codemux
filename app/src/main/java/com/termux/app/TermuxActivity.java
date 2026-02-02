@@ -228,6 +228,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         setContentView(R.layout.activity_termux);
 
+        setTermuxTerminalViewAndClients();
+
         setupIDE();
 
         requestStoragePermission(false);
@@ -258,8 +260,6 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         }
 
-        setTermuxTerminalViewAndClients();
-
         setTerminalToolbarView(savedInstanceState);
 
         setSettingsButtonView();
@@ -267,8 +267,6 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         setNewSessionButtonView();
 
         setToggleKeyboardView();
-
-        registerForContextMenu(mTerminalView);
 
         FileReceiverActivity.updateFileReceiverActivityComponentsState(this);
 
@@ -304,6 +302,16 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         if (mIsInvalidState) return;
 
+        // Ensure mPreferences is initialized
+        if (mPreferences == null) {
+            mPreferences = TermuxAppSharedPreferences.build(this, true);
+        }
+
+        if (mPreferences == null) {
+            mIsInvalidState = true;
+            return;
+        }
+
         mIsVisible = true;
 
         if (mTermuxTerminalSessionActivityClient != null)
@@ -312,7 +320,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         if (mTermuxTerminalViewClient != null)
             mTermuxTerminalViewClient.onStart();
 
-        if (mPreferences.isTerminalMarginAdjustmentEnabled())
+        if (mTerminalView != null && mPreferences.isTerminalMarginAdjustmentEnabled())
             addTermuxActivityRootViewGlobalLayoutListener();
 
         registerTermuxActivityBroadcastReceiver();
@@ -480,6 +488,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     private void setMargins() {
         RelativeLayout relativeLayout = findViewById(R.id.activity_termux_root_relative_layout);
+        if (relativeLayout == null) return;
         int marginHorizontal = mProperties.getTerminalMarginHorizontal();
         int marginVertical = mProperties.getTerminalMarginVertical();
         ViewUtils.setLayoutMarginsInDp(relativeLayout, marginHorizontal, marginVertical, marginHorizontal, marginVertical);
@@ -488,12 +497,15 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
 
     public void addTermuxActivityRootViewGlobalLayoutListener() {
-        getTermuxActivityRootView().getViewTreeObserver().addOnGlobalLayoutListener(getTermuxActivityRootView());
+        TermuxActivityRootView rootView = getTermuxActivityRootView();
+        if (rootView != null)
+            rootView.getViewTreeObserver().addOnGlobalLayoutListener(rootView);
     }
 
     public void removeTermuxActivityRootViewGlobalLayoutListener() {
-        if (getTermuxActivityRootView() != null)
-            getTermuxActivityRootView().getViewTreeObserver().removeOnGlobalLayoutListener(getTermuxActivityRootView());
+        TermuxActivityRootView rootView = getTermuxActivityRootView();
+        if (rootView != null)
+            rootView.getViewTreeObserver().removeOnGlobalLayoutListener(rootView);
     }
 
 
@@ -540,6 +552,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         mTerminalView = terminalView;
         if (mTermuxTerminalViewClient != null) {
             mTerminalView.setTerminalViewClient(mTermuxTerminalViewClient);
+            mTermuxTerminalViewClient.onTerminalViewCreated();
+        }
+        if (mTermuxTerminalSessionActivityClient != null) {
+            mTermuxTerminalSessionActivityClient.onTerminalViewCreated();
         }
         registerForContextMenu(mTerminalView);
         if (mTermuxTerminalExtraKeys != null) {
@@ -720,7 +736,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     /** Hook system menu to show context menu instead. */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        mTerminalView.showContextMenu();
+        if (mTerminalView != null)
+            mTerminalView.showContextMenu();
         return false;
     }
 
@@ -730,19 +747,24 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         switch (item.getItemId()) {
             case CONTEXT_MENU_SELECT_URL_ID:
-                mTermuxTerminalViewClient.showUrlSelection();
+                if (mTermuxTerminalViewClient != null)
+                    mTermuxTerminalViewClient.showUrlSelection();
                 return true;
             case CONTEXT_MENU_SHARE_TRANSCRIPT_ID:
-                mTermuxTerminalViewClient.shareSessionTranscript();
+                if (mTermuxTerminalViewClient != null)
+                    mTermuxTerminalViewClient.shareSessionTranscript();
                 return true;
             case CONTEXT_MENU_SHARE_SELECTED_TEXT:
-                mTermuxTerminalViewClient.shareSelectedText();
+                if (mTermuxTerminalViewClient != null)
+                    mTermuxTerminalViewClient.shareSelectedText();
                 return true;
             case CONTEXT_MENU_AUTOFILL_USERNAME:
-                mTerminalView.requestAutoFillUsername();
+                if (mTerminalView != null)
+                    mTerminalView.requestAutoFillUsername();
                 return true;
             case CONTEXT_MENU_AUTOFILL_PASSWORD:
-                mTerminalView.requestAutoFillPassword();
+                if (mTerminalView != null)
+                    mTerminalView.requestAutoFillPassword();
                 return true;
             case CONTEXT_MENU_RESET_TERMINAL_ID:
                 onResetTerminalSession(session);
@@ -763,7 +785,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                 ActivityUtils.startActivity(this, new Intent(this, SettingsActivity.class));
                 return true;
             case CONTEXT_MENU_REPORT_ID:
-                mTermuxTerminalViewClient.reportIssueFromTranscript();
+                if (mTermuxTerminalViewClient != null)
+                    mTermuxTerminalViewClient.reportIssueFromTranscript();
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -774,7 +797,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     public void onContextMenuClosed(Menu menu) {
         super.onContextMenuClosed(menu);
         // onContextMenuClosed() is triggered twice if back button is pressed to dismiss instead of tap for some reason
-        mTerminalView.onContextMenuClosed(menu);
+        if (mTerminalView != null)
+            mTerminalView.onContextMenuClosed(menu);
     }
 
     private void showKillSessionDialog(TerminalSession session) {
@@ -816,12 +840,14 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         }
     }
     private void toggleKeepScreenOn() {
-        if (mTerminalView.getKeepScreenOn()) {
-            mTerminalView.setKeepScreenOn(false);
-            mPreferences.setKeepScreenOn(false);
-        } else {
-            mTerminalView.setKeepScreenOn(true);
-            mPreferences.setKeepScreenOn(true);
+        if (mTerminalView != null) {
+            if (mTerminalView.getKeepScreenOn()) {
+                mTerminalView.setKeepScreenOn(false);
+                mPreferences.setKeepScreenOn(false);
+            } else {
+                mTerminalView.setKeepScreenOn(true);
+                mPreferences.setKeepScreenOn(true);
+            }
         }
     }
 
@@ -833,6 +859,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
      * if targeting targetSdkVersion 30 (android 11) and running on sdk 30 (android 11) and higher.
      */
     public void requestStoragePermission(boolean isPermissionCallback) {
+        if (!isPermissionCallback && PermissionUtils.checkStoragePermission(this, PermissionUtils.isLegacyExternalStoragePossible(this))) {
+            return;
+        }
+
         new Thread() {
             @Override
             public void run() {
@@ -842,15 +872,17 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                 // If permission is granted, then also setup storage symlinks.
                 if(PermissionUtils.checkAndRequestLegacyOrManageExternalStoragePermission(
                     TermuxActivity.this, requestCode, !isPermissionCallback)) {
-                    if (isPermissionCallback)
-                        Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
-                            getString(com.termux.shared.R.string.msg_storage_permission_granted_on_request));
+                    if (isPermissionCallback) {
+                        runOnUiThread(() -> Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
+                            getString(com.termux.shared.R.string.msg_storage_permission_granted_on_request)));
+                    }
 
                     TermuxInstaller.setupStorageSymlinks(TermuxActivity.this);
                 } else {
-                    if (isPermissionCallback)
-                        Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
-                            getString(com.termux.shared.R.string.msg_storage_permission_not_granted_on_request));
+                    if (isPermissionCallback) {
+                        runOnUiThread(() -> Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
+                            getString(com.termux.shared.R.string.msg_storage_permission_not_granted_on_request)));
+                    }
                 }
             }
         }.start();
@@ -944,6 +976,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         return mTermuxService;
     }
 
+    @Nullable
     public TerminalView getTerminalView() {
         return mTerminalView;
     }
