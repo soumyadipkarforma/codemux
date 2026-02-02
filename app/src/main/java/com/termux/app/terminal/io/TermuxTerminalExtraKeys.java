@@ -3,8 +3,8 @@ package com.termux.app.terminal.io;
 import android.annotation.SuppressLint;
 import android.view.Gravity;
 import android.view.View;
-
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.termux.app.TermuxActivity;
