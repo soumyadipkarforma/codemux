@@ -5,12 +5,14 @@ on:
     branches:
       - main
       - ide
+      - ide
       - android-10
     paths-ignore:
       - 'docs/**'
   pull_request:
     branches:
       - main
+      - ide
       - ide
       - android-10
     paths-ignore:

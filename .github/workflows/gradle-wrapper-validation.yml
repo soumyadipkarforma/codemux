@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - main
+      - ide
       - android-10
     paths-ignore:
       - 'docs/**'
   pull_request:
     branches:
       - main
+      - ide
       - android-10
     paths-ignore:
       - 'docs/**'

@@ -5,12 +5,14 @@ on:
     branches:
       - main
       - ide
+      - ide
       - 'github-releases/**'
     paths-ignore:
       - 'docs/**'
   pull_request:
     branches:
       - main
+      - ide
       - ide
     paths-ignore:
       - 'docs/**'
