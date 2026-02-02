@@ -6,6 +6,7 @@ import android.widget.EditText;
 import java.util.Stack;
 
 public class UndoRedoHelper {
+    private static final int MAX_STACK_SIZE = 50;
     private Stack<String> undoStack = new Stack<>();
     private Stack<String> redoStack = new Stack<>();
     private EditText editText;
@@ -23,8 +24,14 @@ public class UndoRedoHelper {
             @Override
             public void afterTextChanged(Editable s) {
                 if (!isIterating) {
-                    undoStack.push(s.toString());
-                    redoStack.clear();
+                    String newText = s.toString();
+                    if (undoStack.isEmpty() || !newText.equals(undoStack.peek())) {
+                        undoStack.push(newText);
+                        if (undoStack.size() > MAX_STACK_SIZE) {
+                            undoStack.remove(0);
+                        }
+                        redoStack.clear();
+                    }
                 }
             }
         });

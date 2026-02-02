@@ -6,25 +6,19 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 public class IDEPagerAdapter extends FragmentStateAdapter {
-    public FileManagerFragment fileManagerFragment;
-    public FileEditorFragment fileEditorFragment;
-    public ShellFragment shellFragment;
 
     public IDEPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);
-        fileManagerFragment = new FileManagerFragment();
-        fileEditorFragment = new FileEditorFragment();
-        shellFragment = new ShellFragment();
     }
 
     @NonNull
     @Override
     public Fragment createFragment(int position) {
         switch (position) {
-            case 0: return fileManagerFragment;
-            case 1: return fileEditorFragment;
-            case 2: return shellFragment;
-            default: return shellFragment;
+            case 0: return new FileManagerFragment();
+            case 1: return new FileEditorFragment();
+            case 2: return new ShellFragment();
+            default: return new ShellFragment();
         }
     }
 

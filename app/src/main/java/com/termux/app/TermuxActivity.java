@@ -62,6 +62,7 @@ import com.termux.view.TerminalViewClient;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewpager.widget.ViewPager;
 import androidx.viewpager2.widget.ViewPager2;
@@ -498,7 +499,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     private void setupIDE() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setNavigationOnClickListener(v -> getDrawer().openDrawer(Gravity.LEFT));
+        toolbar.setNavigationOnClickListener(v -> getDrawer().openDrawer(GravityCompat.START));
 
         mViewPager = findViewById(R.id.view_pager);
         mPagerAdapter = new IDEPagerAdapter(this);
@@ -517,7 +518,10 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     public void openFileInEditor(java.io.File file) {
         mViewPager.setCurrentItem(1);
-        mPagerAdapter.fileEditorFragment.openFile(file);
+        Fragment fragment = getSupportFragmentManager().findFragmentByTag("f1");
+        if (fragment instanceof FileEditorFragment) {
+            ((FileEditorFragment) fragment).openFile(file);
+        }
     }
 
     private java.io.File mCurrentWorkingDirectory;
@@ -662,7 +666,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     @SuppressLint("RtlHardcoded")
     @Override
     public void onBackPressed() {
-        if (getDrawer().isDrawerOpen(Gravity.LEFT)) {
+        if (getDrawer().isDrawerOpen(GravityCompat.START)) {
             getDrawer().closeDrawers();
         } else {
             finishActivityIfNotFinishing();

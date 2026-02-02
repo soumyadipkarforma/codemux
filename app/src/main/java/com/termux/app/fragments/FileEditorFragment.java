@@ -1,10 +1,11 @@
 package com.termux.app.fragments;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -22,6 +23,7 @@ public class FileEditorFragment extends Fragment {
     private EditText mEditor;
     private File mCurrentFile;
     private UndoRedoHelper mUndoRedoHelper;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
 
     @Nullable
     @Override
@@ -38,33 +40,43 @@ public class FileEditorFragment extends Fragment {
     }
 
     private void saveFile() {
-        if (mCurrentFile == null) return;
-        try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(mCurrentFile));
-            bw.write(mEditor.getText().toString());
-            bw.close();
-            Toast.makeText(getContext(), "Saved " + mCurrentFile.getName(), Toast.LENGTH_SHORT).show();
-        } catch (IOException e) {
-            Toast.makeText(getContext(), "Save failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+        if (mCurrentFile == null || mEditor == null) return;
+        final String content = mEditor.getText().toString();
+        new Thread(() -> {
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(mCurrentFile))) {
+                bw.write(content);
+                mHandler.post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(getContext(), "Saved " + mCurrentFile.getName(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } catch (IOException e) {
+                mHandler.post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(getContext(), "Save failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).start();
     }
 
     public void openFile(File file) {
         mCurrentFile = file;
-        StringBuilder text = new StringBuilder();
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = br.readLine()) != null) {
-                text.append(line);
-                text.append('\n');
+        new Thread(() -> {
+            StringBuilder text = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    text.append(line).append('\n');
+                }
+                mHandler.post(() -> {
+                    if (mEditor != null) {
+                        mEditor.setText(text.toString());
+                    }
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            br.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (mEditor != null) {
-            mEditor.setText(text.toString());
-        }
+        }).start();
     }
 }

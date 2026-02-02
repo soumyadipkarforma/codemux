@@ -19,6 +19,7 @@ import com.termux.R;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class FileManagerFragment extends Fragment {
@@ -57,7 +58,7 @@ public class FileManagerFragment extends Fragment {
             fileList.addAll(Arrays.asList(files));
         }
         // Sort files: directories first, then alphabetical
-        fileList.sort((f1, f2) -> {
+        Collections.sort(fileList, (f1, f2) -> {
             if (f1.isDirectory() && !f2.isDirectory()) return -1;
             if (!f1.isDirectory() && f2.isDirectory()) return 1;
             return f1.getName().compareToIgnoreCase(f2.getName());
