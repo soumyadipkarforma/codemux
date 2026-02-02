@@ -1,0 +1,99 @@
+name: Build Codemux IDE
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-runner:
+    name: Check Runner Availability
+    runs-on: ubuntu-24.04-arm
+    outputs:
+      runner: ${{ steps.set-runner.outputs.runner }}
+    steps:
+      - id: set-runner
+        run: echo "runner=ubuntu-24.04-arm" >> $GITHUB_OUTPUT
+    continue-on-error: true
+
+  build:
+    name: Build APKs
+    needs: check-runner
+    runs-on: ${{ needs.check-runner.result == 'success' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    
+    steps:
+      - name: Setup
+        run: echo "Starting build on ${{ runner.os }} ${{ runner.arch }}"
+
+      - name: Clone repo
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android Components
+        run: |
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" "ndk;latest"
+          yes | sdkmanager --licenses
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build APKs
+        run: ./gradlew assembleRelease
+
+      - name: Generate sha256sums
+        run: |
+          mkdir -p build-artifacts
+          find app/build/outputs/apk/release -name "*.apk" -exec cp {} build-artifacts/ \;
+          cd build-artifacts
+          sha256sum *.apk > sha256sums.txt
+
+      - name: Attach Universal APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codemux-Universal-Release
+          path: build-artifacts/*-universal-release-unsigned.apk
+
+      - name: Attach arm64-v8a APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codemux-arm64-v8a-Release
+          path: build-artifacts/*-arm64-v8a-release-unsigned.apk
+
+      - name: Attach armeabi-v7a APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codemux-armeabi-v7a-Release
+          path: build-artifacts/*-armeabi-v7a-release-unsigned.apk
+
+      - name: Attach x86_64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codemux-x86_64-Release
+          path: build-artifacts/*-x86_64-release-unsigned.apk
+
+      - name: Attach x86 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codemux-x86-Release
+          path: build-artifacts/*-x86-release-unsigned.apk
+
+      - name: Attach Checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: Codemux-SHA256-Checksums
+          path: build-artifacts/sha256sums.txt
+
+      - name: Complete
+        run: echo "Build job completed successfully."
