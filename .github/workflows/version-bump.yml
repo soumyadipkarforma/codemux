@@ -1,0 +1,59 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+
+jobs:
+  bump-version:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump Version
+        id: bump
+        run: |
+          # Extract versionCode
+          VERSION_CODE=$(grep "versionCode =" app/build.gradle.kts | awk '{print $3}')
+          NEW_VERSION_CODE=$((VERSION_CODE + 1))
+          
+          # Extract versionName
+          VERSION_NAME=$(grep "versionName =" app/build.gradle.kts | awk -F'"' '{print $2}')
+          
+          # Split version name into major, minor, patch
+          IFS='.' read -ra VERSION_PARTS <<< "$VERSION_NAME"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION_NAME="$MAJOR.$MINOR.$NEW_PATCH"
+          
+          # Update the file
+          sed -i "s/versionCode = $VERSION_CODE/versionCode = $NEW_VERSION_CODE/" app/build.gradle.kts
+          sed -i "s/versionName = \"$VERSION_NAME\"/versionName = \"$NEW_VERSION_NAME\"/" app/build.gradle.kts
+          
+          echo "new_version=$NEW_VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "new_code=$NEW_VERSION_CODE" >> $GITHUB_OUTPUT
+          
+          echo "Bumped version from $VERSION_NAME ($VERSION_CODE) to $NEW_VERSION_NAME ($NEW_VERSION_CODE)"
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/build.gradle.kts
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} (${{ steps.bump.outputs.new_code }}) [skip ci]"
+          git push
